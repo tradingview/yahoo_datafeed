@@ -314,7 +314,7 @@ MockupHistoryProvider = (function() {
 
 				for (var barIndex = 0; barIndex < barsCount; barIndex++) {
 
-					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution * 60 - date.getTimezoneOffset() * 60;
+					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution * 60 + date.getTimezoneOffset() * 60;
 
 					//console.log(barTime + ": " + new Date(barTime * 1000));
 
