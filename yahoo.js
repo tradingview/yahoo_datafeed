@@ -257,7 +257,8 @@ RequestProcessor = function(action, query, response) {
 				"has_no_volume": symbolInfo.type != "stock",
 				"ticker": _lastYahooResponse["ticker"].toUpperCase(),
 				"description": symbolInfo.description.length > 0 ? symbolInfo.description : symbolInfo.name,
-				"type": symbolInfo.type
+				"type": symbolInfo.type,
+				"supported_resolutions" : ["D","2D","3D","W","3W","M","6M"]
 			};
 
 			response.writeHead(200, defaultResponseHeader);
