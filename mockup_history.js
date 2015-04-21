@@ -207,6 +207,23 @@ MockupHistoryProvider = (function() {
 					}
 				],
 			}
+		},{
+			name: "SUBMINUTE",
+			symbolInfoPatch: {
+				session: "24x7",
+				timezone: "UTC",
+				supported_resolutions: ["0.5"],
+				intraday_multipliers: ["0.5"],
+				description: "24x7"
+			},
+			tradingSessions:  {
+				tradesOnWeekends: true,
+				'default': [{
+						start: 0,
+						end: 1440
+					}
+				],
+			}
 		},
 	];
 
@@ -219,7 +236,7 @@ MockupHistoryProvider = (function() {
 		"pricescale": 100,
 		"pointvalue": 1,
 		"session": "24x7",
-		"intraday_multipliers": ["5", "10", "15"],
+		"intraday_multipliers": ["0.5", "5", "10", "15"],
 		"supported_resolutions": ["5", "10", "15", "W"],
 		"has_weekly_and_monthly": false,
 		"has_dwm": false,
@@ -254,6 +271,10 @@ MockupHistoryProvider = (function() {
 			}
 		}
 
+		if (rightBarIndex < history.t.length - 1) {
+			// should increase rightBarIndex for slice to include it
+			rightBarIndex++;
+		}
 		return {
 			s: "ok",
 			t: history.t.slice(leftBarIndex, rightBarIndex),
