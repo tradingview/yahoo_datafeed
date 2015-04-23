@@ -269,9 +269,16 @@ MockupHistoryProvider = (function() {
 				leftBarIndex = i;
 				break;
 			}
+		}		
+
+		if (rightBarIndex == undefined && leftBarIndex == undefined) {
+			return {
+				t: [], c: [], o: [], h: [], l: [], v: [],
+				s: "no_data"
+			};
 		}
 
-		if (rightBarIndex < history.t.length - 1) {
+		if (rightBarIndex < history.t.length) {
 			// should increase rightBarIndex for slice to include it
 			rightBarIndex++;
 		}
