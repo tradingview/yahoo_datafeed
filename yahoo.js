@@ -273,11 +273,12 @@ RequestProcessor = function(action, query, response) {
 
 		if (MockupHistoryProvider.isMockupSymbolName(symbol)) {
 			console.log("It's a mockup symbol");
+			var originalResolution = resolution;
 			if (resolution.toLowerCase() == 'd') {
 				resolution = 1440;
 			}
 
-			var result = MockupHistoryProvider.history(symbol, resolution, startDateTimestamp, endDateTimestamp);
+			var result = MockupHistoryProvider.history(symbol, resolution, startDateTimestamp, endDateTimestamp, originalResolution);
 
 			response.writeHead(200, defaultResponseHeader);
 			response.write(JSON.stringify(result));

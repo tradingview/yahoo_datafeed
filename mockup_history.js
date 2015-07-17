@@ -1,5 +1,20 @@
 MockupHistoryProvider = (function() {
 	var that = {};
+	
+	var fs = require("fs");
+	
+	var filesHistory = {};
+	
+	function loadSymbolFile(filename) {
+		var fileContent = fs.readFileSync(filename);
+		var content = JSON.parse(fileContent);
+		var symbolInfo = content.symbol;
+		var history = content.history;
+		var symbolName = symbolInfo.name;
+		filesHistory[symbolName] = ({ info: symbolInfo, history: history });
+		_symbols.push({ name: symbolName, symbolInfoPatch: symbolInfo, fromFile: true });
+		console.log('Loaded symbol file: ' + symbolName);
+	}
 
 	that.symbols = function() {
 		return _symbols.map(function(x) {return x.name; } );
@@ -35,9 +50,9 @@ MockupHistoryProvider = (function() {
 		return result;
 	};
 
-	that.history = function(name, resolution, leftDate, rightDate) {
+	that.history = function(name, resolution, leftDate, rightDate, originalResolution) {
 		name = trimName(name);
-		return mockupSymbolHistory(name, resolution, leftDate, rightDate);
+		return mockupSymbolHistory(name, resolution, leftDate, rightDate, originalResolution);
 	};
 
 
@@ -226,6 +241,17 @@ MockupHistoryProvider = (function() {
 			}
 		},
 	];
+	
+	var files = fs.readdirSync(".");
+	
+	for(var i in files) {
+		var filename = files[i];
+		if (filename.indexOf(".sym") != -1) {
+			console.log('Found symbol file: ' + filename);
+			loadSymbolFile(filename);
+		}		
+	}
+	
 
 	var _mockupSymbolInfo = {
 		"exchange-traded": "MOCK",
@@ -254,8 +280,8 @@ MockupHistoryProvider = (function() {
 	}
 
 
-	function mockupSymbolHistory(symbol, resolution, startDateTimestamp, endDateTimestamp) {
-		var history = createHistory(symbol, resolution);
+	function mockupSymbolHistory(symbol, resolution, startDateTimestamp, endDateTimestamp, originalResolution) {
+		var history = createHistory(symbol, resolution, originalResolution);
 		
 		var current = new Date() / 1000;
 		
@@ -305,7 +331,7 @@ MockupHistoryProvider = (function() {
 		return symbol + "," + resolution;
 	}
 
-	function createHistory(symbol, resolution) {
+	function createHistory(symbol, resolution, originalResolution) {
 		var symbolRecords = _symbols.filter(function(x) {return x.name == symbol; } );
 		if (symbolRecords.length === 0) {
 			throw symbol + " is not a mockup symbol name";
@@ -316,13 +342,19 @@ MockupHistoryProvider = (function() {
 		if (_historyCache[symbolKey]) {
 			return _historyCache[symbolKey];
 		}
-
-		var sessions = symbolRecords[0].tradingSessions;
-
+		
 		var result = {
 			t: [], c: [], o: [], h: [], l: [], v: [],
 			s: "ok"
 		};
+		
+		if (symbolRecords[0].fromFile) {
+			result = filesHistory[symbol].history[originalResolution] || result;
+			_historyCache[symbolKey] = result;
+			return result;
+		}		
+
+		var sessions = symbolRecords[0].tradingSessions;		
 
 		var today = new Date();
 		today.setHours(0, 0, 0, 0);
