@@ -256,6 +256,12 @@ MockupHistoryProvider = (function() {
 
 	function mockupSymbolHistory(symbol, resolution, startDateTimestamp, endDateTimestamp) {
 		var history = createHistory(symbol, resolution);
+		
+		var current = new Date() / 1000;
+		
+		if (endDateTimestamp > current) {
+			endDateTimestamp = current;
+		}
 
 		var leftBarIndex;
 		var rightBarIndex;
@@ -266,12 +272,12 @@ MockupHistoryProvider = (function() {
 			}
 
 			if (history.t[i] < startDateTimestamp && !leftBarIndex) {
-				leftBarIndex = i;
+				leftBarIndex = i + 1;
 				break;
 			}
 		}		
 
-		if (rightBarIndex == undefined && leftBarIndex == undefined) {
+		if ((rightBarIndex == undefined && leftBarIndex == undefined) || (leftBarIndex > rightBarIndex)) {
 			return {
 				t: [], c: [], o: [], h: [], l: [], v: [],
 				s: "no_data"
@@ -324,7 +330,7 @@ MockupHistoryProvider = (function() {
 		var daysCount = 365 * 2;
 		var median = 40;
 
-		for (var day = daysCount; day > 0; day--) {
+		for (var day = daysCount; day > -10; day--) {
 			var date = new Date(today.valueOf() - day * 24 * 60 * 60 * 1000);
 			var dayIndex = date.getDay() + 1;
 
