@@ -34,7 +34,22 @@ function httpGet(path, callback)
 		});
 	}
 
-	http.request(options, onDataCallback).end();
+	var req = http.request(options, onDataCallback);
+	
+	req.on('socket', function (socket) {
+		socket.setTimeout(5000);  
+		socket.on('timeout', function() {
+			console.log('timeout');
+			req.abort();
+		});
+	});
+	
+	req.on('error', function(e) {
+		console.log('Problem with request: ' + e.message);
+		callback('');
+	});
+	
+	req.end();
 }
 
 
