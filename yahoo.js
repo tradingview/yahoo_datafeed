@@ -170,7 +170,8 @@ RequestProcessor = function(action, query, response) {
 
 
 	this.sendMarks = function(response) {
-		var now = new Date().valueOf() / 1000;
+		var now = new Date();
+		now = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) / 1000;
 		var day = 60 * 60 * 24;
 
 		var marks = {
@@ -189,16 +190,16 @@ RequestProcessor = function(action, query, response) {
 	};
 	
 	this.sendTimescaleMarks = function(response) {
-		var now = new Date().valueOf() / 1000;
+		var now = new Date();
+		now = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())) / 1000;
 		var day = 60 * 60 * 24;
 		
 		var marks = [
-		{id: "tsm1", time: now - day * 1, color: "red", label: "A", tooltip: ""},
-		{id: "tsm2", time: now - day * 5, color: "blue", label: "D", tooltip: ["Dividends: $0.56", "Date: " + new Date((now - day * 4) * 1000).toDateString()]},
+		{id: "tsm1", time: now - day * 0, color: "red", label: "A", tooltip: ""},
+		{id: "tsm2", time: now - day * 4, color: "blue", label: "D", tooltip: ["Dividends: $0.56", "Date: " + new Date((now - day * 4) * 1000).toDateString()]},
 		{id: "tsm3", time: now - day * 7, color: "green", label: "D", tooltip: ["Dividends: $3.46", "Date: " + new Date((now - day * 7) * 1000).toDateString()]},
-		{id: "tsm4", time: now - day * 10, color: "#999999", label: "E", tooltip: ["Earnings: $3.44", "Estimate: $3.60"]},
-		{id: "tsm5", time: now - day * 14, color: "purple", label: "S", tooltip: ["Split: 2/1", "Date: " + new Date((now - day * 14) * 1000).toDateString()]},
-		{id: "tsm6", time: now - day * 18, color: "black", label: "E", tooltip: ["Earnings: $5.40", "Estimate: $5.00"]},
+		{id: "tsm4", time: now - day * 15, color: "#999999", label: "E", tooltip: ["Earnings: $3.44", "Estimate: $3.60"]},		
+		{id: "tsm7", time: now - day * 30, color: "red", label: "E", tooltip: ["Earnings: $5.40", "Estimate: $5.00"]},
 		];
 
 		response.writeHead(200, defaultResponseHeader);
