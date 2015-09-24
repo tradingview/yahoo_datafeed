@@ -6,8 +6,8 @@ MockupHistoryProvider = (function() {
 	var filesHistory = {};
 	
 	function loadSymbolFile(filename) {
-		var fileContent = fs.readFileSync(filename);
-		var content = JSON.parse(fileContent);
+		var fileContent = fs.readFileSync(filename, 'utf8');
+		var content = JSON.parse(fileContent.replace(/^\uFEFF/, ''));
 		var symbolInfo = content.symbol;
 		var history = content.history;
 		var symbolName = symbolInfo.name;
@@ -94,9 +94,9 @@ MockupHistoryProvider = (function() {
 			symbolInfoPatch: {
 				session: "24x7",
 				timezone: "Europe/Moscow",
-				supported_resolutions: ["1", "15", "60", "D"],
+				supported_resolutions: ["1", "15", "60", "D", "W", "3W", "M", "6M"],
 				intraday_multipliers: ["1", "15", "60"],
-				has_empty_bars: true,
+				has_empty_bars: false,
 				description: "Europe/Moscow 24x7"
 			},
 			tradingSessions:  {
@@ -112,7 +112,7 @@ MockupHistoryProvider = (function() {
 			symbolInfoPatch: {
 				session: "0930-1900",
 				timezone: "Europe/Moscow",
-				supported_resolutions: ["1", "15", "60", "D"],
+				supported_resolutions: ["1", "2", "5", "10", "15", "30", "60"],
 				intraday_multipliers: ["1", "15", "60"],
 				has_empty_bars: true,
 				description: "Europe/Moscow 0930-1900"
@@ -120,8 +120,8 @@ MockupHistoryProvider = (function() {
 			tradingSessions:  {
 				tradesOnWeekends: true,
 				'default': [{
-						start: 9 * 60 + 30,
-						end: 19 * 60
+						start: 9 * 60 + 30 - 3 * 60,
+						end: 19 * 60 - 3 * 60
 					}
 				],
 			}
@@ -138,8 +138,8 @@ MockupHistoryProvider = (function() {
 			tradingSessions:  {
 				tradesOnWeekends: false,
 				'default': [{
-						start: 11*60,
-						end: 17 * 60
+						start: 11*60 + 3 * 60,
+						end: 17 * 60 + 3 * 60
 					}
 				],
 			}
@@ -181,8 +181,8 @@ MockupHistoryProvider = (function() {
 			tradingSessions:  {
 				tradesOnWeekends: true,
 				'default': [{
-						start: 9 * 60,
-						end: 16 * 60
+						start: 9 * 60 - (5 * 60 + 30),
+						end: 16 * 60 - (5 * 60 + 30)
 					}
 				],
 			}
@@ -357,7 +357,7 @@ MockupHistoryProvider = (function() {
 		var sessions = symbolRecords[0].tradingSessions;		
 
 		var today = new Date();
-		today.setHours(0, 0, 0, 0);
+		today.setUTCHours(0, 0, 0, 0);
 
 		var daysCount = 365 * 2;
 		var median = 40;
@@ -380,7 +380,7 @@ MockupHistoryProvider = (function() {
 
 				for (var barIndex = 0; barIndex < barsCount; barIndex++) {
 
-					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution * 60 + date.getTimezoneOffset() * 60;
+					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution * 60;
 
 					//console.log(barTime + ": " + new Date(barTime * 1000));
 
