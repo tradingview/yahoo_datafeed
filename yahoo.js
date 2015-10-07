@@ -160,7 +160,7 @@ RequestProcessor = function(action, query, response) {
 				{name: "Stock", value: "stock"},
 				{name: "Index", value: "index"}
 			],
-			supportedResolutions: [ "1", "5", "15", "30", "60", "D", "2D", "3D", "W", "3W", "M", '6M' ]
+			supportedResolutions: [ "5S", "1", "5", "15", "30", "60", "D", "2D", "3D", "W", "3W", "M", '6M' ]
 		};
 
 		response.writeHead(200, defaultResponseHeader);

@@ -223,13 +223,15 @@ MockupHistoryProvider = (function() {
 				],
 			}
 		},{
-			name: "SUBMINUTE",
+			name: "M-SUBMINUTE",
 			symbolInfoPatch: {
 				session: "24x7",
 				timezone: "UTC",
-				supported_resolutions: ["0.5"],
-				intraday_multipliers: ["0.5"],
-				description: "24x7"
+				supported_resolutions: ["1S", "5S", "30S", "1", "30", "D"],
+				intraday_multipliers: ["1"],
+				seconds_multipliers: ["1"],
+				description: "24x7",
+				has_seconds: true
 			},
 			tradingSessions:  {
 				tradesOnWeekends: true,
@@ -337,6 +339,12 @@ MockupHistoryProvider = (function() {
 			throw symbol + " is not a mockup symbol name";
 		}
 
+		if (typeof resolution === 'string' && resolution.toLowerCase()[resolution.length - 1] == 's') {
+			resolution = resolution.substring(0, resolution.length - 1);
+		} else {
+			resolution = resolution * 60; // now in seconds
+		}
+
 		var symbolKey = seriesKey(symbol, resolution);
 
 		if (_historyCache[symbolKey]) {
@@ -359,7 +367,7 @@ MockupHistoryProvider = (function() {
 		var today = new Date();
 		today.setUTCHours(0, 0, 0, 0);
 
-		var daysCount = 365 * 2;
+		var daysCount = Math.max(700 * resolution / 60 / 24 / 60, 1);
 		var median = 40;
 
 		for (var day = daysCount; day > -10; day--) {
@@ -376,11 +384,11 @@ MockupHistoryProvider = (function() {
 
 			for (var i = 0; i < daySessions.length; ++i) {
 				var session = daySessions[i];
-				var barsCount = (session.end - session.start) / resolution;
+				var barsCount = (session.end - session.start) * 60 / resolution;
 
 				for (var barIndex = 0; barIndex < barsCount; barIndex++) {
 
-					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution * 60;
+					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution;
 
 					//console.log(barTime + ": " + new Date(barTime * 1000));
 
