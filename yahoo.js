@@ -146,6 +146,7 @@ RequestProcessor = function(action, query, response) {
 			supports_group_request: false,
 			supports_marks: true,
 			supports_timescale_marks: true,
+			supports_time: true,
 			exchanges: [
 				{value: "", name: "All Exchanges", desc: ""},
 				{value: "XETRA", name: "XETRA", desc: "XETRA"},
@@ -186,6 +187,13 @@ RequestProcessor = function(action, query, response) {
 
 		response.writeHead(200, defaultResponseHeader);
 		response.write(JSON.stringify(marks));
+		response.end();
+	};
+	
+	this.sendTime = function(response) {
+		var now = new Date();
+		response.writeHead(200, defaultResponseHeader);
+		response.write(Math.floor(now / 1000) + '');
 		response.end();
 	};
 	
@@ -411,6 +419,9 @@ RequestProcessor = function(action, query, response) {
 		}
 		else if (action == "/marks") {
 			this.sendMarks(response);
+		}
+		else if (action == "/time") {
+			this.sendTime(response);
 		}
 		else if (action == "/timescale_marks") {
 			this.sendTimescaleMarks(response);
