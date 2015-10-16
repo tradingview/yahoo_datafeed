@@ -182,10 +182,11 @@ function searchResultFromDatabaseItem(item) {
 }
 
 
-exports.search = function (searchText, type, exchange, maxRecords) {
+exports.search = function (searchString, type, exchange, maxRecords) {
 	var MAX_SEARCH_RESULTS = !!maxRecords ? maxRecords : 50;
 	var results = [];
-	var queryIsEmpty = !searchText || searchText.length == 0;
+	var queryIsEmpty = !searchString || searchString.length == 0;
+	var searchStringUpperCase = searchString.toUpperCase();
 
 	for (var i = 0; i < symbols.length; ++i) {
 		var item = symbols[i];
@@ -195,7 +196,9 @@ exports.search = function (searchText, type, exchange, maxRecords) {
 		if (exchange && exchange.length > 0 && item.exchange != exchange) {
 			continue;
 		}
-		if (queryIsEmpty || item.name.indexOf(searchText) == 0) {
+		if (queryIsEmpty ||
+		    item.name.toUpperCase().indexOf(searchStringUpperCase) == 0 ||
+		    item.description.toUpperCase().indexOf(searchStringUpperCase) >= 0) {
 			results.push(searchResultFromDatabaseItem(item));
 		}
 		if (results.length >= MAX_SEARCH_RESULTS) {
