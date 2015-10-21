@@ -184,28 +184,45 @@ function searchResultFromDatabaseItem(item) {
 
 exports.search = function (searchString, type, exchange, maxRecords) {
 	var MAX_SEARCH_RESULTS = !!maxRecords ? maxRecords : 50;
-	var results = [];
+	var results = []; // array of WeightedItem { item, weight }
 	var queryIsEmpty = !searchString || searchString.length == 0;
 	var searchStringUpperCase = searchString.toUpperCase();
 
 	for (var i = 0; i < symbols.length; ++i) {
 		var item = symbols[i];
+
 		if (type && type.length > 0 && item.type != type) {
 			continue;
 		}
 		if (exchange && exchange.length > 0 && item.exchange != exchange) {
 			continue;
 		}
-		if (queryIsEmpty ||
-		    item.name.toUpperCase().indexOf(searchStringUpperCase) == 0 ||
-		    item.description.toUpperCase().indexOf(searchStringUpperCase) >= 0) {
-			results.push(searchResultFromDatabaseItem(item));
+
+		var positionInName = item.name.toUpperCase().indexOf(searchStringUpperCase);
+		var positionInDescription = item.description.toUpperCase().indexOf(searchStringUpperCase);
+
+		if (queryIsEmpty || positionInName >= 0 || positionInDescription >= 0) {
+			var found = false;
+			for (var resultIndex = 0; resultIndex < results.length; resultIndex++) {
+				if (results[resultIndex].item == item) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				var weight = positionInName >= 0 ? positionInName : 8000 + positionInDescription;
+				results.push({ item: item, weight: weight });
+			}
 		}
+
 		if (results.length >= MAX_SEARCH_RESULTS) {
 			break;
 		}
 	}
-	return results;
+
+	return results
+		.sort(function (weightedItem1, weightedItem2) { return weightedItem1.weight - weightedItem2.weight; })
+		.map(function (weightedItem) { return searchResultFromDatabaseItem(weightedItem.item); });
 }
 
 
