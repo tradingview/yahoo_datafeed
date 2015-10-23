@@ -214,15 +214,12 @@ exports.search = function (searchString, type, exchange, maxRecords) {
 				results.push({ item: item, weight: weight });
 			}
 		}
-
-		if (results.length >= MAX_SEARCH_RESULTS) {
-			break;
-		}
 	}
 
 	return results
 		.sort(function (weightedItem1, weightedItem2) { return weightedItem1.weight - weightedItem2.weight; })
-		.map(function (weightedItem) { return searchResultFromDatabaseItem(weightedItem.item); });
+		.map(function (weightedItem) { return searchResultFromDatabaseItem(weightedItem.item); })
+		.slice(0, Math.min(results.length, MAX_SEARCH_RESULTS));
 }
 
 
