@@ -244,6 +244,9 @@ RequestProcessor = function(action, query, response) {
 
 	this.sendSymbolInfo = function(symbolName, response) {
 		console.log("sendSymbolInfo: " + symbolName);
+		if (symbolName.length && symbolName[symbolName.length - 1] == '*') {
+			symbolName = symbolName.slice(0, symbolName.length - 1);
+		}
 		if (MockupHistoryProvider.isMockupSymbolName(symbolName)) {
 			console.log("is's a mockup");
 			var result = MockupHistoryProvider.symbolInfo(symbolName);
