@@ -30,6 +30,11 @@ function httpGet(path, callback)
 		});
 
 		response.on('end', function () {
+			if (response.statusCode !== 200) {
+				callback('');
+				return;
+			}
+
 			callback(result)
 		});
 	}
@@ -80,6 +85,10 @@ function convertYahooHistoryToUDFFormat(data) {
 		result.l.push(parseFloat(items[3]));
 		result.c.push(parseFloat(items[4]));
 		result.v.push(parseFloat(items[5]));
+	}
+
+	if (result.t.length === 0) {
+		result.s = "no_data";
 	}
 
 	return result;
@@ -326,6 +335,10 @@ RequestProcessor = function(action, query, response) {
 
 			var result = MockupHistoryProvider.history(symbol, resolution, startDateTimestamp, endDateTimestamp, originalResolution);
 
+			if (result.t.length === 0) {
+				result.s = "no_data";
+			}
+
 			response.writeHead(200, defaultResponseHeader);
 			response.write(JSON.stringify(result));
 			response.end();
@@ -344,6 +357,19 @@ RequestProcessor = function(action, query, response) {
 		var month = requestLeftDate.getMonth();
 		var day = requestLeftDate.getDate();
 
+		var endtext = '';
+
+		if (endDateTimestamp) {
+			var requestRightDate = new Date(endDateTimestamp * 1000);
+			var endyear = requestRightDate.getFullYear();
+			var endmonth = requestRightDate.getMonth();
+			var endday = requestRightDate.getDate();
+
+			endtext = '&d=' + endmonth +
+			'&e=' + endday +
+			'&f=' + endyear;
+		}
+
 		if (resolution != "d" && resolution != "w" && resolution != "m") {
 			throw "Unsupported resolution: " + resolution;
 		}
@@ -351,7 +377,7 @@ RequestProcessor = function(action, query, response) {
 		var address = "ichart.finance.yahoo.com/table.csv?s=" + symbolInfo.name +
 			"&a=" + month +
 			"&b=" + day  +
-			"&c=" + year +
+			"&c=" + year + endtext +
 			"&g=" + resolution +
 			"&ignore=.csv";
 
