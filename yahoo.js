@@ -7,6 +7,7 @@
 */
 
 var http = require("http"),
+	https = require("https"),
 	url = require("url"),
 	symbolsDatabase = require("./symbols_database");
 
@@ -39,7 +40,7 @@ function httpGet(path, callback)
 		});
 	}
 
-	var req = http.request(options, onDataCallback);
+	var req = https.request(options, onDataCallback);
 	
 	req.on('socket', function (socket) {
 		socket.setTimeout(5000);  
@@ -413,7 +414,7 @@ RequestProcessor = function(action, query, response) {
 		// for debug purposes
 		// console.log(options.host + options.path);
 
-		http.request(options, function(res) {
+		https.request(options, function(res) {
 			var result = '';
 
 			res.on('data', function (chunk) {
