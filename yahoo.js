@@ -278,27 +278,6 @@ RequestProcessor = function(action, query, response) {
 
 		console.log("Requesting symbol info: " + datafeedHost + address);
 
-		httpGet(address, function(result) {
-			_pendingRequestType = "meta";
-
-			try {
-				with (that) {
-					eval(result);
-				}
-			}
-			catch (error) {
-				that.sendError("invalid symbol", response);
-				return;
-			}
-
-			var lastPrice = _lastYahooResponse["previous_close"] + "";
-
-			//	BEWARE: this `pricescale` parameter computation algorithm is wrong and works
-			//	for symbols with 10-based minimal movement value only
-			var pricescale = lastPrice.indexOf('.') > 0
-				? Math.pow(10, lastPrice.split('.')[1].length)
-				: 10;
-
 			var info = {
 				"name": symbolInfo.name + "*",
 				"exchange-traded": symbolInfo.exchange,
@@ -306,12 +285,12 @@ RequestProcessor = function(action, query, response) {
 				"timezone": "America/New_York",
 				"minmov": 1,
 				"minmov2": 0,
-				"pricescale": pricescale,
+				"pricescale": 100,
 				"pointvalue": 1,
 				"session": "0930-1630",
 				"has_intraday": false,
 				"has_no_volume": symbolInfo.type != "stock",
-				"ticker": _lastYahooResponse["ticker"].toUpperCase(),
+				"ticker": symbolInfo.name,
 				"description": symbolInfo.description.length > 0 ? symbolInfo.description : symbolInfo.name,
 				"type": symbolInfo.type,
 				"supported_resolutions" : ["D","2D","3D","W","3W","M","6M"]
@@ -320,7 +299,6 @@ RequestProcessor = function(action, query, response) {
 			response.writeHead(200, defaultResponseHeader);
 			response.write(JSON.stringify(info));
 			response.end();
-		});
 	};
 
 	this.sendSymbolHistory = function(symbol, startDateTimestamp, endDateTimestamp, resolution, response) {
