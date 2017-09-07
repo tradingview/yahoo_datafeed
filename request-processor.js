@@ -248,7 +248,7 @@ RequestProcessor.prototype._sendConfig = function (response) {
 				desc: "NGM"
 			},
 		],
-		symbolsTypes: [
+		symbols_types: [
 			{
 				name: "All types",
 				value: ""
@@ -262,7 +262,7 @@ RequestProcessor.prototype._sendConfig = function (response) {
 				value: "index"
 			}
 		],
-		supportedResolutions: ["D", "2D", "3D", "W", "3W", "M", '6M']
+		supported_resolutions: ["D", "2D", "3D", "W", "3W", "M", '6M']
 	};
 
 	response.writeHead(200, defaultResponseHeader);
