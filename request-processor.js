@@ -25,6 +25,10 @@ setInterval(function () {
 	quandlCache = {};
 }, quandlCacheCleanupTime);
 
+function dateForLogs() {
+	return (new Date).toISOString() + ': ';
+}
+
 function createDefaultHeader() {
 	return {
 		"Content-Type": "text/plain",
@@ -115,7 +119,8 @@ function convertQuandlHistoryToUDFFormat(data) {
 		});
 
 	} catch (error) {
-		console.error(error);
+		var dataStr = typeof data === "string" ? data.slice(0, 100) : data;
+		console.error(dateForLogs() + error + ", failed to parse: " + dataStr);
 	}
 
 	return result;
@@ -202,6 +207,41 @@ function proxyRequest(controller, options, response) {
 
 function RequestProcessor(symbolsDatabase) {
 	this._symbolsDatabase = symbolsDatabase;
+}
+
+function filterDataPeriod(data, fromSeconds, toSeconds) {
+	if (!data || !data.t || data.t.length === 0) {
+		return data;
+	}
+
+	var fromIndex = null;
+	var toIndex = null;
+	var times = data.t;
+	for (var i = 0; i < times.length; i++) {
+		var time = times[i];
+		if (fromIndex === null && time >= fromSeconds) {
+			fromIndex = i;
+		}
+		if (toIndex === null && time >= toSeconds) {
+			toIndex = time > toSeconds ? i - 1 : i;
+		}
+		if (fromIndex !== null && toIndex !== null) {
+			break;
+		}
+	}
+
+	fromIndex = fromIndex || 0;
+	toIndex = toIndex ? toIndex + 1 : times.length;
+
+	return {
+		t: data.t.slice(fromIndex, toIndex),
+		o: data.o.slice(fromIndex, toIndex),
+		h: data.h.slice(fromIndex, toIndex),
+		l: data.l.slice(fromIndex, toIndex),
+		c: data.c.slice(fromIndex, toIndex),
+		v: data.v.slice(fromIndex, toIndex),
+		s: data.s
+	};
 }
 
 RequestProcessor.prototype._sendError = function (error, response) {
@@ -395,7 +435,7 @@ RequestProcessor.prototype._sendSymbolInfo = function (symbolName, response) {
 
 RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimestamp, endDateTimestamp, resolution, response) {
 	function dateToYMD(date) {
-		var obj = new Date(date * 1000);
+		var obj = new Date(date);
 		var year = obj.getFullYear();
 		var month = obj.getMonth() + 1;
 		var day = obj.getDate();
@@ -411,14 +451,31 @@ RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimes
 		});
 	}
 
-	var from = '1970-01-01'; // dateToYMD(startDateTimestamp); always return all data to reduce number of requests to quandl
-	var to = dateToYMD(endDateTimestamp);
+	function secondsToISO(sec) {
+		if (sec === null || sec === undefined) {
+			return 'n/a';
+		}
+		return (new Date(sec * 1000).toISOString());
+	}
+
+	function logForData(data, key, isCached) {
+		var fromCacheTime = data && data.t ? data.t[0] : null;
+		var toCacheTime = data && data.t ? data.t[data.t.length - 1] : null;
+		console.log(dateForLogs() + "Return QUANDL result" + (isCached ? " from cache" : "") + ": " + key + ", from " + secondsToISO(fromCacheTime) + " to " + secondsToISO(toCacheTime));
+	}
+
+	console.log(dateForLogs() + "Got history request for " + symbol + ", " + resolution + " from " + secondsToISO(startDateTimestamp)+ " to " + secondsToISO(endDateTimestamp));
+
+	// always request all data to reduce number of requests to quandl
+	var from = '1970-01-01';
+	var to = dateToYMD(Date.now());
 
 	var key = symbol + "|" + from + "|" + to;
 
 	if (quandlCache[key]) {
-		console.log("Return QUANDL result from cache: " + key);
-		sendResult(quandlCache[key]);
+		var dataFromCache = filterDataPeriod(quandlCache[key], startDateTimestamp, endDateTimestamp);
+		logForData(dataFromCache, key, true);
+		sendResult(JSON.stringify(dataFromCache));
 		return;
 	}
 
@@ -428,16 +485,24 @@ RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimes
 		"&date.gte=" + from +
 		"&date.lte=" + to;
 
-	console.log("Sending request to quandl for symbol " + symbol + ". url=" + address);
+	console.log(dateForLogs() + "Sending request to quandl  " + key + ". url=" + address);
 
 	httpGet("www.quandl.com", address, function (result) {
 		if (response.finished) {
 			// we can be here if error happened on socket disconnect
 			return;
 		}
-		var content = JSON.stringify(convertQuandlHistoryToUDFFormat(result));
-		quandlCache[key] = content;
-		sendResult(content);
+		console.log(dateForLogs() + "Got response from quandl  " + key + ". Try to parse.");
+		var data = convertQuandlHistoryToUDFFormat(result);
+		if (data.t.length !== 0) {
+			console.log(dateForLogs() + "Successfully parsed and put to cache " + data.t.length + " bars.");
+			quandlCache[key] = data;
+		} else {
+			console.warn(dateForLogs() + "Parsing returned empty result.");
+		}
+		var filteredData = filterDataPeriod(data, startDateTimestamp, endDateTimestamp);
+		logForData(filteredData, key, false);
+		sendResult(JSON.stringify(filteredData));
 	});
 };
 
