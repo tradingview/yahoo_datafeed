@@ -157,23 +157,23 @@ function convertYahooQuotesToUDFFormat(tickersMap, data) {
 			s: "ok",
 			n: ticker,
 			v: {
-				ch: quote.ChangeRealtime || quote.Change,
-				chp: (quote.PercentChange || quote.ChangeinPercent) && (quote.PercentChange || quote.ChangeinPercent).replace(/[+-]?(.*)%/, "$1"),
+				ch: +(quote.ChangeRealtime || quote.Change),
+				chp: +((quote.PercentChange || quote.ChangeinPercent) && (quote.PercentChange || quote.ChangeinPercent).replace(/[+-]?(.*)%/, "$1")),
 
 				short_name: quote.Symbol,
 				exchange: quote.StockExchange,
 				original_name: quote.StockExchange + ":" + quote.Symbol,
 				description: quote.Name,
 
-				lp: quote.LastTradePriceOnly,
-				ask: quote.AskRealtime,
-				bid: quote.BidRealtime,
+				lp: +quote.LastTradePriceOnly,
+				ask: +quote.AskRealtime,
+				bid: +quote.BidRealtime,
 
-				open_price: quote.Open,
-				high_price: quote.DaysHigh,
-				low_price: quote.DaysLow,
-				prev_close_price: quote.PreviousClose,
-				volume: quote.Volume,
+				open_price: +quote.Open,
+				high_price: +quote.DaysHigh,
+				low_price: +quote.DaysLow,
+				prev_close_price: +quote.PreviousClose,
+				volume: +quote.Volume,
 			}
 		});
 	});
@@ -605,6 +605,10 @@ RequestProcessor.prototype.processRequest = function (action, query, response) {
 		}
 		else if (action === "/futuresmag") {
 			this._sendFuturesmag(response);
+		} else {
+			response.writeHead(200, defaultResponseHeader);
+			response.write('datafeed is ok');
+			response.end();
 		}
 	}
 	catch (error) {
