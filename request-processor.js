@@ -515,7 +515,7 @@ RequestProcessor.prototype._sendQuotes = function (tickersString, response) {
 		tickersMap[yqlSymbol] = ticker;
 	});
 
-	var yql = "select * from yahoo.finance.quotes where symbol in ('" + Object.keys(tickersMap).join("','") + "')";
+	var yql = "env 'store://datatables.org/alltableswithkeys'; select * from yahoo.finance.quotes where symbol in ('" + Object.keys(tickersMap).join("','") + "')";
 	console.log("Quotes query: " + yql);
 
 	var options = {
