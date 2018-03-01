@@ -38,7 +38,7 @@ var MockupHistoryProvider = (function() {
 
 	that.isMockupSymbolName = function(name) {
 		name = trimName(name);
-		return _symbols.filter(function(x) {return x.name == name; } ).length > 0;
+		return _symbols.filter(function(x) {return x.name === name || x.symbolInfoPatch.ticker === name; } ).length > 0;
 	};
 
 	function trimName(name) {
@@ -50,7 +50,7 @@ var MockupHistoryProvider = (function() {
 
 	that.symbolInfo = function(name) {
 		name = trimName(name);
-		var symbolRecords = _symbols.filter(function(x) {return x.name == name; } );
+		var symbolRecords = _symbols.filter(function(x) {return x.name == name || x.symbolInfoPatch.ticker === name; } );
 		if (symbolRecords.length === 0) {
 			throw name + " is not a mockup symbol name";
 		}
@@ -160,7 +160,7 @@ var MockupHistoryProvider = (function() {
 	}
 
 	function createHistory(symbol, resolution, originalResolution) {
-		var symbolRecords = _symbols.filter(function(x) {return x.name === symbol; } );
+		var symbolRecords = _symbols.filter(function(x) {return x.name === symbol || x.symbolInfoPatch.ticker === symbol; } );
 		if (symbolRecords.length === 0) {
 			throw symbol + " is not a mockup symbol name";
 		}
@@ -183,7 +183,7 @@ var MockupHistoryProvider = (function() {
 		};
 		
 		if (symbolRecords[0].fromFile) {
-			result = filesHistory[symbol].history[originalResolution] || result;
+			result = filesHistory[symbolRecords[0].name].history[originalResolution] || result;
 			_historyCache[symbolKey] = result;
 			return result;
 		}		
