@@ -121,7 +121,7 @@ var MockupHistoryProvider = (function() {
 		var rightBarIndex;
 
 		for (var i = history.t.length - 1; i >= 0; --i ) {
-			if (history.t[i] < endDateTimestamp && !rightBarIndex) {
+			if (history.t[i] <= endDateTimestamp && !rightBarIndex) {
 				rightBarIndex = i;
 			}
 
@@ -131,10 +131,19 @@ var MockupHistoryProvider = (function() {
 			}
 		}		
 
-		if ((rightBarIndex === undefined && leftBarIndex === undefined) || (leftBarIndex > rightBarIndex)) {
+		if ((rightBarIndex === undefined && leftBarIndex === undefined)) {
 			return {
 				t: [], c: [], o: [], h: [], l: [], v: [],
 				s: "no_data"
+			};
+		}
+		
+		if (leftBarIndex > rightBarIndex) {
+			return {
+				t: [], c: [], o: [], h: [], l: [], v: [],
+				s: "no_data",
+				nextTime: history.t[rightBarIndex],
+				
 			};
 		}
 

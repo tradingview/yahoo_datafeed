@@ -325,7 +325,7 @@ RequestProcessor.prototype._sendConfig = function (response) {
 				value: "index"
 			}
 		],
-		supported_resolutions: ['60', '240', "D", "2D", "3D", "W", "3W", "M", '6M']
+		supported_resolutions: ['1', '60', '240', "D", "2D", "3D", "W", "3W", "M", '6M']
 	};
 
 	response.writeHead(200, defaultResponseHeader);
