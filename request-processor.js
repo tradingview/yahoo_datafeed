@@ -60,8 +60,10 @@ function markQuandlKeyAsInvalid(key) {
 
 	invalidQuandlKeys.push(key);
 
+	console.warn('Quandl key invalidated ' + key);
+
 	setTimeout(function() {
-		invalidQuandlKeys.shift();
+		console.log("Quandl key restored: " + invalidQuandlKeys.shift());
 	}, quandlCacheCleanupTime);
 }
 
@@ -86,11 +88,11 @@ function httpGet(datafeedHost, path, callback) {
 
 		response.on('end', function () {
 			if (response.statusCode !== 200) {
-				callback(response.statusMessage || '');
+				callback({ status: 'ERR_STATUS_CODE', errmsg: response.statusMessage || '' });
 				return;
 			}
 
-			callback(result);
+			callback({ status: 'ok', data: result });
 		});
 	}
 
@@ -105,8 +107,7 @@ function httpGet(datafeedHost, path, callback) {
 	});
 
 	req.on('error', function (e) {
-		console.log('Problem with request: ' + e.message);
-		callback(e.message);
+		callback({ status: 'ERR_SOCKET', errmsg: e.message || '' });
 	});
 
 	req.end();
@@ -506,7 +507,7 @@ RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimes
 
 	if (quandlKey === null) {
 		console.log(dateForLogs() + "No valid quandl key available");
-		sendError('No API Key', response);
+		sendError('No valid API Keys available', response);
 		return;
 	}
 
@@ -523,12 +524,25 @@ RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimes
 			// we can be here if error happened on socket disconnect
 			return;
 		}
+
+		if (result.status !== 'ok') {
+			if (result.status === 'ERR_SOCKET') {
+				console.log('Socket problem with request: ' + result.errmsg);
+				sendError("Socket problem with request " + result.errmsg, response);
+				return;
+			}
+
+			console.error(dateForLogs() + "Error response from quandl for key " + key + ". Message: " + result.errmsg);
+			markQuandlKeyAsInvalid(quandlKey);
+			sendError("Error quandl response " + result.errmsg, response);
+			return;
+		}
+
 		console.log(dateForLogs() + "Got response from quandl  " + key + ". Try to parse.");
-		var data = convertQuandlHistoryToUDFFormat(result);
+		var data = convertQuandlHistoryToUDFFormat(result.data);
 		if (data === null) {
 			var dataStr = typeof result === "string" ? result.slice(0, 100) : result;
 			console.error(dateForLogs() + " failed to parse: " + dataStr);
-			markQuandlKeyAsInvalid(quandlKey);
 			sendError("Invalid quandl response", response);
 			return;
 		}
@@ -647,7 +661,10 @@ RequestProcessor.prototype.processRequest = function (action, query, response) {
 			this._sendFuturesmag(response);
 		} else {
 			response.writeHead(200, defaultResponseHeader);
-			response.write('Datafeed version is ' + version + '. Valid keys count is ' + String(quandlKeys.length - invalidQuandlKeys.length));
+			response.write('Datafeed version is ' + version +
+				'\nValid keys count is ' + String(quandlKeys.length - invalidQuandlKeys.length) +
+				'\nCurrent key is ' + (getValidQuandlKey() || '').slice(0, 3) +
+				(invalidQuandlKeys.length !== 0 ? '\nInvalid keys are ' + invalidQuandlKeys.reduce(function(prev, cur) { return prev + cur.slice(0, 3) + ','; }, '') : ''));
 			response.end();
 		}
 	}
