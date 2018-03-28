@@ -13,6 +13,8 @@
 
 "use strict";
 
+var version = '2.0.0';
+
 var https = require("https");
 var http = require("http");
 
@@ -26,7 +28,7 @@ setInterval(function () {
 }, quandlCacheCleanupTime);
 
 function dateForLogs() {
-	return (new Date).toISOString() + ': ';
+	return (new Date()).toISOString() + ': ';
 }
 
 function createDefaultHeader() {
@@ -37,6 +39,37 @@ function createDefaultHeader() {
 }
 
 var defaultResponseHeader = createDefaultHeader();
+
+var quandlKeys = process.env.QUANDL_API_KEY.split(','); // you should create a free account on quandl.com to get this key, you can set some keys concatenated with a comma
+var invalidQuandlKeys = [];
+
+function getValidQuandlKey() {
+	for (var i = 0; i < quandlKeys.length; i++) {
+		var key = quandlKeys[i];
+		if (invalidQuandlKeys.indexOf(key) === -1) {
+			return key;
+		}
+	}
+	return null;
+}
+
+function markQuandlKeyAsInvalid(key) {
+	if (invalidQuandlKeys.indexOf(key) !== -1) {
+		return;
+	}
+
+	invalidQuandlKeys.push(key);
+
+	setTimeout(function() {
+		invalidQuandlKeys.shift();
+	}, quandlCacheCleanupTime);
+}
+
+function sendError(error, response) {
+	response.writeHead(200, defaultResponseHeader);
+	response.write("{\"s\":\"error\",\"errmsg\":\"" + error + "\"}");
+	response.end();
+}
 
 function httpGet(datafeedHost, path, callback) {
 	var options = {
@@ -53,7 +86,7 @@ function httpGet(datafeedHost, path, callback) {
 
 		response.on('end', function () {
 			if (response.statusCode !== 200) {
-				callback('');
+				callback(response.statusMessage || '');
 				return;
 			}
 
@@ -73,7 +106,7 @@ function httpGet(datafeedHost, path, callback) {
 
 	req.on('error', function (e) {
 		console.log('Problem with request: ' + e.message);
-		callback('');
+		callback(e.message);
 	});
 
 	req.end();
@@ -119,8 +152,7 @@ function convertQuandlHistoryToUDFFormat(data) {
 		});
 
 	} catch (error) {
-		var dataStr = typeof data === "string" ? data.slice(0, 100) : data;
-		console.error(dateForLogs() + error + ", failed to parse: " + dataStr);
+		return null;
 	}
 
 	return result;
@@ -243,15 +275,6 @@ function filterDataPeriod(data, fromSeconds, toSeconds) {
 		s: data.s
 	};
 }
-
-RequestProcessor.prototype._sendError = function (error, response) {
-	response.writeHead(200, defaultResponseHeader);
-	response.write("{\"s\":\"error\",\"errmsg\":\"" + error + "\"}");
-	response.end();
-
-	console.log(error);
-};
-
 
 RequestProcessor.prototype._sendConfig = function (response) {
 
@@ -479,8 +502,16 @@ RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimes
 		return;
 	}
 
+	var quandlKey = getValidQuandlKey();
+
+	if (quandlKey === null) {
+		console.log(dateForLogs() + "No valid quandl key available");
+		sendError('No API Key', response);
+		return;
+	}
+
 	var address = "/api/v3/datatables/WIKI/PRICES.json" +
-		"?api_key=" + process.env.QUANDL_API_KEY + // you should create a free account on quandl.com to get this key
+		"?api_key=" + quandlKey + // you should create a free account on quandl.com to get this key
 		"&ticker=" + symbol +
 		"&date.gte=" + from +
 		"&date.lte=" + to;
@@ -494,12 +525,21 @@ RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimes
 		}
 		console.log(dateForLogs() + "Got response from quandl  " + key + ". Try to parse.");
 		var data = convertQuandlHistoryToUDFFormat(result);
+		if (data === null) {
+			var dataStr = typeof result === "string" ? result.slice(0, 100) : result;
+			console.error(dateForLogs() + " failed to parse: " + dataStr);
+			markQuandlKeyAsInvalid(quandlKey);
+			sendError("Invalid quandl response", response);
+			return;
+		}
+
 		if (data.t.length !== 0) {
 			console.log(dateForLogs() + "Successfully parsed and put to cache " + data.t.length + " bars.");
 			quandlCache[key] = data;
 		} else {
-			console.warn(dateForLogs() + "Parsing returned empty result.");
+			console.log(dateForLogs() + "Parsing returned empty result.");
 		}
+
 		var filteredData = filterDataPeriod(data, startDateTimestamp, endDateTimestamp);
 		logForData(filteredData, key, false);
 		sendResult(JSON.stringify(filteredData));
@@ -607,12 +647,13 @@ RequestProcessor.prototype.processRequest = function (action, query, response) {
 			this._sendFuturesmag(response);
 		} else {
 			response.writeHead(200, defaultResponseHeader);
-			response.write('datafeed is ok');
+			response.write('Datafeed version is ' + version + '. Valid keys count is ' + String(quandlKeys.length - invalidQuandlKeys.length));
 			response.end();
 		}
 	}
 	catch (error) {
-		this._sendError(error, response);
+		sendError(error, response);
+		console.error('Exception: ' + error);
 	}
 };
 
