@@ -108,6 +108,26 @@ exports.symbols = [
 			],
 		}
 	}, {
+		name: "M-NY24",
+		symbolInfoPatch: {
+			session: "24x7",
+			timezone: "America/New_York",
+			supported_resolutions: ["1", "15", "60", "D", "1D"],
+			intraday_multipliers: ["1", "15", "60"],
+			has_empty_bars: false,
+			description: "NY 24x7",
+			has_daily: true,
+			has_dwm: true,
+		},
+		tradingSessions:  {
+			tradesOnWeekends: true,
+			'default': [{
+				start: 0,
+				end: 24 * 60
+			}
+			],
+		}
+	}, {
 		name: "M-ASIA-KOLKATA",
 		symbolInfoPatch: {
 			session: '0900-1600',
