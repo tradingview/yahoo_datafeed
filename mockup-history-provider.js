@@ -6,6 +6,40 @@
 
 var _symbols = require("./mockup-symbols").symbols;
 
+var RESOLUTION_WITH_KIND_CHAR_REGEX = /^(\d*)([SHDWMR])$/;
+var MINUTES_RESOLUTION_REGEX = /^(\d+)$/;
+
+var KIND_TO_SECONDS = {};
+KIND_TO_SECONDS.s = 1;
+KIND_TO_SECONDS.m = 60 * KIND_TO_SECONDS.s;
+KIND_TO_SECONDS.h = 60 * KIND_TO_SECONDS.m;
+KIND_TO_SECONDS.d = 24 * KIND_TO_SECONDS.h;
+KIND_TO_SECONDS.w = 7 * KIND_TO_SECONDS.d;
+
+function getMultiplier(s) {
+	if (s.length === 0) {
+		return 1;
+	}
+
+	return parseInt(s, 10);
+}
+
+function getSeconds(s) {
+	s = (s + '').toUpperCase().split(',')[0];
+
+	let match = RESOLUTION_WITH_KIND_CHAR_REGEX.exec(s);
+	if (match !== null) {
+		return KIND_TO_SECONDS[match[2]] * getMultiplier(match[1]);
+	}
+
+	match = MINUTES_RESOLUTION_REGEX.exec(s);
+	if (match !== null) {
+		return KIND_TO_SECONDS.m * getMultiplier(match[1]);
+	}
+
+	throw new Error('Cannot parse resolution');
+}
+
 var MockupHistoryProvider = (function() {
 	var that = {};
 	
@@ -65,9 +99,9 @@ var MockupHistoryProvider = (function() {
 		return result;
 	};
 
-	that.history = function(name, resolution, leftDate, rightDate, originalResolution) {
+	that.history = function(name, resolution, leftDate, rightDate, currencyCode) {
 		name = trimName(name);
-		return mockupSymbolHistory(name, resolution, leftDate, rightDate, originalResolution);
+		return mockupSymbolHistory(name, resolution, leftDate, rightDate, currencyCode);
 	};
 	
 	var files = fs.readdirSync("./sym");
@@ -108,8 +142,8 @@ var MockupHistoryProvider = (function() {
 	}
 
 
-	function mockupSymbolHistory(symbol, resolution, startDateTimestamp, endDateTimestamp, originalResolution) {
-		var history = createHistory(symbol, resolution, originalResolution);
+	function mockupSymbolHistory(symbol, resolution, startDateTimestamp, endDateTimestamp, currencyCode) {
+		var history = createHistory(symbol, resolution, currencyCode);
 		
 		var current = new Date() / 1000;
 		
@@ -168,16 +202,10 @@ var MockupHistoryProvider = (function() {
 		return symbol + "," + resolution;
 	}
 
-	function createHistory(symbol, resolution, originalResolution) {
+	function createHistory(symbol, resolution, currencyCode) {
 		var symbolRecords = _symbols.filter(function(x) {return x.name === symbol || x.symbolInfoPatch.ticker === symbol; } );
 		if (symbolRecords.length === 0) {
 			throw symbol + " is not a mockup symbol name";
-		}
-
-		if (typeof resolution === 'string' && resolution.toLowerCase()[resolution.length - 1] === 's') {
-			resolution = resolution.substring(0, resolution.length - 1);
-		} else {
-			resolution = resolution * 60; // now in seconds
 		}
 
 		var symbolKey = seriesKey(symbol, resolution);
@@ -192,17 +220,20 @@ var MockupHistoryProvider = (function() {
 		};
 		
 		if (symbolRecords[0].fromFile) {
-			result = filesHistory[symbolRecords[0].name].history[originalResolution] || result;
+			var fileResolution = resolution.toLowerCase() === '1d' ? 'd' : resolution;
+			result = filesHistory[symbolRecords[0].name].history[fileResolution] || result;
 			_historyCache[symbolKey] = result;
 			return result;
 		}		
 
-		var sessions = symbolRecords[0].tradingSessions;		
+		var sessions = symbolRecords[0].tradingSessions;
 
 		var today = new Date();
 		today.setUTCHours(0, 0, 0, 0);
 
-		var daysCount = Math.max(700 * resolution / 60 / 24 / 60, 1);
+		var resolutionsInSeconds = getSeconds(resolution);
+
+		var daysCount = Math.max(700 * resolutionsInSeconds / 60 / 24 / 60, 1);
 		var median = 40;
 
 		for (var day = daysCount; day > -10; day--) {
@@ -219,11 +250,11 @@ var MockupHistoryProvider = (function() {
 
 			for (var i = 0; i < daySessions.length; ++i) {
 				var session = daySessions[i];
-				var barsCount = (session.end - session.start) * 60 / resolution;
+				var barsCount = (session.end - session.start) * 60 / resolutionsInSeconds;
 
 				for (var barIndex = 0; barIndex < barsCount; barIndex++) {
 
-					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolution;
+					var barTime = date.valueOf() / 1000 + session.start * 60 + barIndex * resolutionsInSeconds;
 
 					//console.log(barTime + ": " + new Date(barTime * 1000));
 

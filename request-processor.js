@@ -335,7 +335,8 @@ RequestProcessor.prototype._sendConfig = function (response) {
 				value: "index"
 			}
 		],
-		supported_resolutions: ['1', '60', '240', "D", "2D", "3D", "W", "3W", "M", '6M']
+		supported_resolutions: ['1', '60', '240', "D", "2D", "3D", "W", "3W", "M", '6M'],
+		currency_codes: ['USD', 'RUB', 'EUR', 'GBP'],
 	};
 
 	response.writeHead(200, defaultResponseHeader);
@@ -458,15 +459,18 @@ RequestProcessor.prototype._prepareSymbolInfo = function (symbolName) {
 	};
 };
 
-RequestProcessor.prototype._sendSymbolInfo = function (symbolName, response) {
+RequestProcessor.prototype._sendSymbolInfo = function (symbolName, currencyCode, response) {
 	var info = this._prepareSymbolInfo(symbolName);
+	if (currencyCode !== undefined) {
+		info = Object.assign({}, info, { currency_code: currencyCode });
+	}
 
 	response.writeHead(200, defaultResponseHeader);
 	response.write(JSON.stringify(info));
 	response.end();
 };
 
-RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimestamp, endDateTimestamp, resolution, response) {
+RequestProcessor.prototype._sendSymbolHistory = function (symbol, startDateTimestamp, endDateTimestamp, resolution, currencyCode, response) {
 	function dateToYMD(date) {
 		var obj = new Date(date);
 		var year = obj.getFullYear();
@@ -643,13 +647,13 @@ RequestProcessor.prototype.processRequest = function (action, query, response) {
 			this._sendConfig(response);
 		}
 		else if (action === "/symbols" && !!query["symbol"]) {
-			this._sendSymbolInfo(query["symbol"], response);
+			this._sendSymbolInfo(query["symbol"], query["currencyCode"], response);
 		}
 		else if (action === "/search") {
 			this._sendSymbolSearchResults(query["query"], query["type"], query["exchange"], query["limit"], response);
 		}
 		else if (action === "/history") {
-			this._sendSymbolHistory(query["symbol"], query["from"], query["to"], query["resolution"].toLowerCase(), response);
+			this._sendSymbolHistory(query["symbol"], query["from"], query["to"], query["resolution"].toLowerCase(), query["currencyCode"], response);
 		}
 		else if (action === "/quotes") {
 			this._sendQuotes(query["symbols"], response);
