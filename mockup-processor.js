@@ -42,6 +42,11 @@ MockupProcessor.prototype._sendSymbolInfo = function(symbolName, response) {
 MockupProcessor.prototype._sendSymbolHistory = function(symbol, startDateTimestamp, endDateTimestamp, resolution, response) {
 	if (MockupHistoryProvider.isMockupSymbolName(symbol)) {
 		console.log("History request: MOCKUP " + symbol + ", " + resolution);
+		
+		if (resolution.toLowerCase() === '1d') {
+			resolution = 'd';
+		}
+		
 		var originalResolution = resolution;
 		if (resolution.toLowerCase() === 'd') {
 			resolution = 1440;
