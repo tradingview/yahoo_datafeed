@@ -650,7 +650,10 @@ RequestProcessor.prototype._sendQuotes = function (tickersString, response) {
 RequestProcessor.prototype._sendNews = function (symbol, response) {
 	var options = {
 		host: "feeds.finance.yahoo.com",
-		path: "/rss/2.0/headline?s=" + symbol + "&region=US&lang=en-US"
+		path: "/rss/2.0/headline?s=" + symbol + "&region=US&lang=en-US",
+		headers: {
+			'user-agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36',
+		},
 	};
 
 	proxyRequest(https, options, response);
